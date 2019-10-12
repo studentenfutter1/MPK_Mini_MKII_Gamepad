@@ -20,6 +20,10 @@ class midiController:
         for i in range(0,25):
             self.keys.append(key(48+i)) # note number
 
+        self.axisXY = []
+        self.axisXY.append(axis(225, "x", 0))
+        self.axisXY.append(axis(177, "y", -1))
+
 
 class key:
     def __init__(self, noteNumber):
@@ -28,10 +32,18 @@ class key:
         self.noteNumber = noteNumber
         self.noteVelocity = 0
 
+class axis:
+    def __init__(self, _id, name, centerValue):
+        self.name = name
+        self.value = 0
+        self.centerValue = centerValue
+        self.id = _id
+
 
 mpk2mini = midiController()  # global
 
 keyMap = ['shift',0,'a','w','s','d',0,'space',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+
 
 def mapKeys():
     pass
@@ -51,31 +63,36 @@ def pollMidi():
     while True:
         if midi_in.poll():
             midiData = midi_in.read(1)
-           # print(midiData)
-            #pg.time.wait(200)
+            #print(midiData)
+            identifier = midiData[0][0][0]
 
-            if midiData[0][0][0] == 144:  # note on channel 1 (pads)
+            if identifier == 144:  # note on channel 1 (pads)
                 for i in range(0, len(mpk2mini.pads)):
                     if midiData[0][0][1] == mpk2mini.pads[i].noteNumber:
                         mpk2mini.pads[i].state = 1
 
-            elif midiData[0][0][0] == 128:  # note off channel 1
+            elif identifier == 128:  # note off channel 1
                 for i in range(0, len(mpk2mini.pads)):
                     if midiData[0][0][1] == mpk2mini.pads[i].noteNumber:
                         mpk2mini.pads[i].state = 0
 
-            elif midiData[0][0][0] == 145:  # note on channel 2 (keys)
+            elif identifier == 145:  # note on channel 2 (keys)
                 for i in range(0, len(mpk2mini.keys)):
                     if midiData[0][0][1] == mpk2mini.keys[i].noteNumber:
                         mpk2mini.keys[i].oldstate = mpk2mini.keys[i].state
                         mpk2mini.keys[i].state = 1
                         
-
-            elif midiData[0][0][0] == 129:  # note off channel 2
+            elif identifier == 129:  # note off channel 2
                 for i in range(0, len(mpk2mini.keys)):
                     if midiData[0][0][1] == mpk2mini.keys[i].noteNumber:
                         mpk2mini.keys[i].oldstate = mpk2mini.keys[i].state
                         mpk2mini.keys[i].state = 0
+
+            elif identifier == 225:  # joystick x
+                mpk2mini.axisXY[0].value =  midiData[0][0][2] - 64
+            elif identifier == 177:  # joystick y
+                mpk2mini.axisXY[1].value =  64 - midiData[0][0][2]
+
 
             text = ""
             for i in range(0, len(mpk2mini.keys)):
@@ -94,6 +111,24 @@ def updateKeys():
                         pyautogui.keyDown(keyMap[i])
                     else:
                         pyautogui.keyUp(keyMap[i])
+
+        x = mpk2mini.axisXY[0].value
+        y = mpk2mini.axisXY[1].value
+        print(str(x), ' ', str(y))
+
+        xMov = 0
+        yMov = 0
+        
+        xScale = 0.2
+        yScale = xScale
+
+        if x != mpk2mini.axisXY[0].centerValue:
+            xMov = x * xScale
+        if y != mpk2mini.axisXY[1].centerValue:
+            yMov = y * yScale
+        pyautogui.move(xMov, yMov)
+
+        
 
 
 def initAll():
