@@ -1,1 +1,1 @@
-# mpk2mini_Gamepad
+# MPK_Mini_MKII_Gamepad
